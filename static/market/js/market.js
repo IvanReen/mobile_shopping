@@ -24,4 +24,39 @@ $(document).ready(function () {
     sortdiv.addEventListener('click', function () {
         sortdiv.style.display = 'none'
     }, false);
+
+
+    //修改购物车
+    var addShoppings = document.getElementsByClassName('addShopping');
+    var subShoppings = document.getElementsByClassName('subShopping');
+
+    for (var i = 0;  i < addShoppings.length; i++){
+        addShopping = addShoppings[i]
+        addShopping.addEventListener('click', function () {
+            pid = this.getAttribute('ga');
+            $.post('/changecart/0/', {'productid':pid}, function (data) {
+                if (data.status == 'seccuss'){
+                    //添加成功，把中间的sapn的innerhtml变成当前数量
+
+                }else{
+                    if (data.data == -1){
+                        window.location.href = 'http://127.0.0.1:8000/login/'
+                    }
+                }
+            })
+        })
+    }
+
+
+    for (var i = 0; i < subShoppings.length; i++){
+        subShopping = subShoppings[i];
+        subShopping.addEventListener('click', function () {
+            pid = this.getAttribute('ga');
+            $.post('/changecart/1/', {'productid':pid}, function (data) {
+                if (data.status == 'seccuss'){
+                    //添加成功，把中间的sapn的innerhtml变成当前数量
+                }
+            })
+        })
+    }
 });

@@ -1,4 +1,12 @@
+import os
+import random
+import time
+
+from django.contrib.auth import logout
+from django.http import HttpResponseRedirect, JsonResponse
 from django.shortcuts import render
+
+from axf import settings
 from axfapp.models import *
 
 # Create your views here.
@@ -42,5 +50,78 @@ def market(request, categoryid, cid, sortid):
 def cart(request):
     return render(request, 'axf/cart.html', {'title':'购物车'})
 
+def changecart(request, flag):
+    # 用户是否登录
+    token = request.session.get('token')
+    if token == None:
+        # 没登陆
+        return JsonResponse({'data':-1, 'status':'error'})
+
+
 def mine(request):
-    return render(request, 'axf/mine.html', {'title':'我的'})
+    username = request.session.get('username', '未登录')
+
+
+
+    return render(request, 'axf/mine.html', {'title':'我的', 'username':username})
+
+from .forms.login import LoginForm
+def login(request):
+    if request.method == 'POST':
+        f = LoginForm(request.POST)
+        if f.is_valid():
+            # 验证密码
+            nameid = f.cleaned_data['username']
+            pswd = f.cleaned_data['passwd']
+            try:
+                user = User.objects.get(userAccount=nameid)
+                if user.userPasswd != pswd:
+                    return HttpResponseRedirect('/login/')
+            except User.DoesNotExist as e:
+                return HttpResponseRedirect('/login/')
+            token = time.time() + random.randrange(1, 100000)
+            user.userToken = str(token)
+            user.save()
+            request.session['username'] = user.userName
+            request.session['token'] = user.userToken
+            return HttpResponseRedirect('/mine/')
+        else:
+            return render(request, 'axf/login.html', {'title': '登录', 'form':f, 'error':f.errors})
+    else:
+        f = LoginForm()
+        return render(request, 'axf/login.html', {'title':'登录', 'form':f})
+
+def register(request):
+    if request.method == 'POST':
+        userAccount = request.POST.get('userAccount')
+        userPasswd = request.POST.get('userPasswd')
+        userName = request.POST.get('userName')
+        userPhone = request.POST.get('userPhone')
+        userAdderss = request.POST.get('userAdderss')
+        userRank = 0
+        token = time.time() + random.randrange(1, 100000)
+        userToken = str(token)
+        f = request.FILES['userImg']
+        userImg = os.path.join(settings.MDEIA_ROOT, userAccount + '.png')
+        with open(userImg, 'wb') as fp:
+            for data in f.chunks():
+                fp.write(data)
+        user = User.createuser(userAccount, userPasswd, userName, userPhone, userAdderss, userImg, userRank, userToken)
+        user.save()
+        request.session['username'] = userName
+        request.session['token'] = userToken
+        return HttpResponseRedirect('/mine/')
+    else:
+        return render(request, 'axf/register.html', {'title':'注册'})
+
+def quit(request):
+    logout(request)
+    return HttpResponseRedirect('/mine/')
+
+def checkuserid(request):
+    userid = request.POST.get('userid')
+    try:
+        user = User.objects.get(userAccount=userid)
+        return JsonResponse({'data':'该用户已被注册', 'status':'error'})
+    except User.DoesNotExist as e:
+        return JsonResponse({'data':'可以注册', 'status':'success'})
