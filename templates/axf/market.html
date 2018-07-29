@@ -42,7 +42,8 @@
                     </a>
                     <section>
 						<button ga="{{item.productid}}" class="subShopping">-</button>
-						<span id="{{item.productid}}">0</span>
+
+                        <span id="{{item.productid}}">{{ item.num | default:0 }}</span>
 						<button ga="{{item.productid}}" class="addShopping">+</button>
 					</section>
                 </li>

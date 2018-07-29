@@ -103,4 +103,38 @@ class User(models.Model):
         u = cls(userAccount=account, userPasswd=passwd, userName=name, userPhone=phone, userAdderss=address, userImg=img, userRank=rank, userToken=token)
         return u
 
+class CartManager1(models.Manager):
+    def get_queryset(self):
+        return super(CartManager1, self).get_queryset().filter(isDelete=False)
+class CartManager2(models.Manager):
+    def get_queryset(self):
+        return super(CartManager2, self).get_queryset().filter(isDelete=False)
+
 # 购物车
+class Cart(models.Model):
+    userAccount = models.CharField(max_length=20)
+    productid = models.CharField(max_length=10)
+    productnum = models.IntegerField()
+    productprice = models.CharField(max_length=10)
+    isChose = models.BooleanField(default=True)
+    productimg = models.CharField(max_length=150)
+    productname = models.CharField(max_length=100)
+    orderid = models.CharField(max_length=20,default="0")
+    isDelete = models.BooleanField(default=False)
+
+    objects = CartManager1()
+    objects2 = CartManager2()
+    @classmethod
+    def createcart(cls,userAccount,productid,productnum,productprice,isChose,productimg,productname,isDelete):
+        c = cls(userAccount = userAccount,productid = productid,productnum=productnum,productprice=productprice,isChose=isChose,productimg=productimg,productname=productname,isDelete=isDelete)
+        return c
+
+class Order(models.Model):
+    orderid = models.CharField(max_length=20)
+    userid = models.CharField(max_length=20)
+    progress = models.IntegerField()
+
+    @classmethod
+    def createorder(cls, orderid, userid, progress):
+        o = cls(orderid=orderid, userid=userid, progress=progress)
+        return o

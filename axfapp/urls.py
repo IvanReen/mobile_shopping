@@ -6,6 +6,7 @@ urlpatterns = [
     re_path('market/(\d+)/(\d+)/(\d+)/', market, name='market'),
     path('cart/', cart, name='cart'),
     re_path('changecart/(\d+)/', changecart, name='changecart'),
+    path('saveoredr/', saveoredr, name='saveoredr'),
 
 
     path('mine/', mine, name='mine'),

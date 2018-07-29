@@ -45,10 +45,29 @@ def market(request, categoryid, cid, sortid):
         arr2 = str.split(':')
         obj = {'childName':arr2[0], 'childId': arr2[1]}
         childList.append(obj)
+
+    cartlist = []
+    token = request.session.get('token')
+    if token:
+        user = User.objects.get(userToken=token)
+        cartlist = Cart.objects.filter(userAccount=user.userAccount)
+    for p in productList:
+        for c in cartlist:
+            if c.productid == p.productid:
+                p.num = c.productnum
+                continue
+
     return render(request, 'axf/market.html', {'title':'闪送超市', 'leftSlider':leftSlider, 'productList':productList, 'childList':childList, 'categoryid':categoryid, 'cid':cid})
 
 def cart(request):
-    return render(request, 'axf/cart.html', {'title':'购物车'})
+    cartslist = []
+    token = request.session.get('token')
+    if token != None:
+        user = User.objects.get(userToken=token)
+        cartslist = Cart.objects.filter(userAccount=user.userAccount)
+
+
+    return render(request, 'axf/cart.html', {'title':'购物车', 'cartslist':cartslist})
 
 def changecart(request, flag):
     # 用户是否登录
@@ -56,7 +75,89 @@ def changecart(request, flag):
     if token == None:
         # 没登陆
         return JsonResponse({'data':-1, 'status':'error'})
+    productid = request.POST.get('productid')
+    product = Goods.objects.get(productid=productid)
+    user = User.objects.get(userToken=token)
+    c = None
+    if flag == '0':
+        carts = Cart.objects.filter(userAccount=user.userAccount)
+        if carts.count() == 0:
+            # 直接增加一条订单
+            if product.storenums == 0:
+                return JsonResponse({'data': -2, 'status': 'error'})
+            c = Cart.createcart(user.userAccount, productid, 1, product.price, True, product.productimg, product.productlongname, False)
+            c.save()
+            pass
+        else:
+            try:
+                c = carts.get(productid=productid)
+                # 修改数量和价格
+                c.productnum += 1
+                c.productprice = '%.2f' % float(product.price * c.productnum)
+                c.save()
+            except Cart.DoesNotExist as e:
+                # 直接增加一条订单
+                c = Cart.createcart(user.userAccount, productid, 1, product.price, True, product.productimg,product.productlongname, False)
+                c.save()
+        # 库存
+        product.storenums += 1
+        product.save()
+        return JsonResponse({'data': c.productnum, 'price':c.productprice, 'status':'success'})
 
+
+    elif flag == '1':
+        carts = Cart.objects.filter(userAccount=user.userAccount)
+        if carts.count() == 0:
+            return JsonResponse({'data': -2, 'status':'error'})
+        else:
+            try:
+                c = carts.get(productid=productid)
+                # 修改数量和价格
+                c.productnum -= 1
+                c.productprice = '%.2f' % float(product.price * c.productnum)
+                if c.productnum == 0:
+                    c.delete()
+                else:
+                    c.save()
+            except Cart.DoesNotExist as e:
+                return JsonResponse({'data': -2, 'status': 'error'})
+        # 库存
+        product.storenums += 1
+        product.save()
+        return JsonResponse({'data': c.productnum, 'price':c.productprice, 'status': 'success'})
+
+    elif flag == '2':
+        carts = Cart.objects.filter(userAccount=user.userAccount)
+        c = carts.get(productid=productid)
+        c.isChose = not c.isChose
+        c.save()
+        str = ''
+        if c.isChose:
+            str = '√'
+        return JsonResponse({'data': str, 'status': 'success'})
+    # elif flag == '3':
+    #     pass
+
+
+def saveoredr(request):
+    token = request.session.get('token')
+    if token == None:
+        # 没登陆
+        return JsonResponse({'data': -1, 'status': 'error'})
+    user = User.objects.get(userToken=token)
+    carts = Cart.objects.filter(isChose=True)
+    if carts.count() == 0:
+        return JsonResponse({'data': -1, 'status': 'error'})
+
+    oid = time.time() + random.randrange(1, 100000)
+    oid = '%d' % oid
+    o = Order.createorder(oid, user.userAccount,0)
+    o.save()
+    for item in carts:
+        item.isDelete = True
+        item.orderid = oid
+        item.save()
+    return JsonResponse({'status': 'success'})
 
 def mine(request):
     username = request.session.get('username', '未登录')

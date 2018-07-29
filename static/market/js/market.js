@@ -35,9 +35,9 @@ $(document).ready(function () {
         addShopping.addEventListener('click', function () {
             pid = this.getAttribute('ga');
             $.post('/changecart/0/', {'productid':pid}, function (data) {
-                if (data.status == 'seccuss'){
+                if (data.status == 'success'){
                     //添加成功，把中间的sapn的innerhtml变成当前数量
-
+                    document.getElementById(pid).innerHTML = data.data
                 }else{
                     if (data.data == -1){
                         window.location.href = 'http://127.0.0.1:8000/login/'
@@ -53,8 +53,13 @@ $(document).ready(function () {
         subShopping.addEventListener('click', function () {
             pid = this.getAttribute('ga');
             $.post('/changecart/1/', {'productid':pid}, function (data) {
-                if (data.status == 'seccuss'){
+                if (data.status == 'success'){
                     //添加成功，把中间的sapn的innerhtml变成当前数量
+                    document.getElementById(pid).innerHTML = data.data;
+                }else{
+                    if (data.data == -1){
+                        window.location.href = 'http://127.0.0.1:8000/login/'
+                    }
                 }
             })
         })
