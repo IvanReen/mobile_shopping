@@ -100,8 +100,16 @@ class User(models.Model):
     userToken = models.CharField(max_length=50)
     @classmethod
     def createuser(cls, account, passwd, name, phone, address, img, rank, token):
-        u = cls(userAccount=account, userPasswd=passwd, userName=name, userPhone=phone, userAdderss=address, userImg=img, userRank=rank, userToken=token)
-        return u
+        return cls(
+            userAccount=account,
+            userPasswd=passwd,
+            userName=name,
+            userPhone=phone,
+            userAdderss=address,
+            userImg=img,
+            userRank=rank,
+            userToken=token,
+        )
 
 class CartManager1(models.Manager):
     def get_queryset(self):
@@ -126,8 +134,16 @@ class Cart(models.Model):
     objects2 = CartManager2()
     @classmethod
     def createcart(cls,userAccount,productid,productnum,productprice,isChose,productimg,productname,isDelete):
-        c = cls(userAccount = userAccount,productid = productid,productnum=productnum,productprice=productprice,isChose=isChose,productimg=productimg,productname=productname,isDelete=isDelete)
-        return c
+        return cls(
+            userAccount=userAccount,
+            productid=productid,
+            productnum=productnum,
+            productprice=productprice,
+            isChose=isChose,
+            productimg=productimg,
+            productname=productname,
+            isDelete=isDelete,
+        )
 
 class Order(models.Model):
     orderid = models.CharField(max_length=20)
@@ -136,5 +152,4 @@ class Order(models.Model):
 
     @classmethod
     def createorder(cls, orderid, userid, progress):
-        o = cls(orderid=orderid, userid=userid, progress=progress)
-        return o
+        return cls(orderid=orderid, userid=userid, progress=progress)

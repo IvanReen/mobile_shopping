@@ -47,8 +47,7 @@ def market(request, categoryid, cid, sortid):
         childList.append(obj)
 
     cartlist = []
-    token = request.session.get('token')
-    if token:
+    if token := request.session.get('token'):
         user = User.objects.get(userToken=token)
         cartlist = Cart.objects.filter(userAccount=user.userAccount)
     for p in productList:
@@ -72,7 +71,7 @@ def cart(request):
 def changecart(request, flag):
     # 用户是否登录
     token = request.session.get('token')
-    if token == None:
+    if token is None:
         # 没登陆
         return JsonResponse({'data':-1, 'status':'error'})
     productid = request.POST.get('productid')
@@ -87,7 +86,6 @@ def changecart(request, flag):
                 return JsonResponse({'data': -2, 'status': 'error'})
             c = Cart.createcart(user.userAccount, productid, 1, product.price, True, product.productimg, product.productlongname, False)
             c.save()
-            pass
         else:
             try:
                 c = carts.get(productid=productid)
@@ -109,18 +107,17 @@ def changecart(request, flag):
         carts = Cart.objects.filter(userAccount=user.userAccount)
         if carts.count() == 0:
             return JsonResponse({'data': -2, 'status':'error'})
-        else:
-            try:
-                c = carts.get(productid=productid)
-                # 修改数量和价格
-                c.productnum -= 1
-                c.productprice = '%.2f' % float(product.price * c.productnum)
-                if c.productnum == 0:
-                    c.delete()
-                else:
-                    c.save()
-            except Cart.DoesNotExist as e:
-                return JsonResponse({'data': -2, 'status': 'error'})
+        try:
+            c = carts.get(productid=productid)
+            # 修改数量和价格
+            c.productnum -= 1
+            c.productprice = '%.2f' % float(product.price * c.productnum)
+            if c.productnum == 0:
+                c.delete()
+            else:
+                c.save()
+        except Cart.DoesNotExist as e:
+            return JsonResponse({'data': -2, 'status': 'error'})
         # 库存
         product.storenums += 1
         product.save()
@@ -131,9 +128,7 @@ def changecart(request, flag):
         c = carts.get(productid=productid)
         c.isChose = not c.isChose
         c.save()
-        str = ''
-        if c.isChose:
-            str = '√'
+        str = '√' if c.isChose else ''
         return JsonResponse({'data': str, 'status': 'success'})
     # elif flag == '3':
     #     pass
@@ -141,7 +136,7 @@ def changecart(request, flag):
 
 def saveoredr(request):
     token = request.session.get('token')
-    if token == None:
+    if token is None:
         # 没登陆
         return JsonResponse({'data': -1, 'status': 'error'})
     user = User.objects.get(userToken=token)
@@ -170,50 +165,48 @@ from .forms.login import LoginForm
 def login(request):
     if request.method == 'POST':
         f = LoginForm(request.POST)
-        if f.is_valid():
-            # 验证密码
-            nameid = f.cleaned_data['username']
-            pswd = f.cleaned_data['passwd']
-            try:
-                user = User.objects.get(userAccount=nameid)
-                if user.userPasswd != pswd:
-                    return HttpResponseRedirect('/login/')
-            except User.DoesNotExist as e:
-                return HttpResponseRedirect('/login/')
-            token = time.time() + random.randrange(1, 100000)
-            user.userToken = str(token)
-            user.save()
-            request.session['username'] = user.userName
-            request.session['token'] = user.userToken
-            return HttpResponseRedirect('/mine/')
-        else:
+        if not f.is_valid():
             return render(request, 'axf/login.html', {'title': '登录', 'form':f, 'error':f.errors})
+        # 验证密码
+        nameid = f.cleaned_data['username']
+        pswd = f.cleaned_data['passwd']
+        try:
+            user = User.objects.get(userAccount=nameid)
+            if user.userPasswd != pswd:
+                return HttpResponseRedirect('/login/')
+        except User.DoesNotExist as e:
+            return HttpResponseRedirect('/login/')
+        token = time.time() + random.randrange(1, 100000)
+        user.userToken = str(token)
+        user.save()
+        request.session['username'] = user.userName
+        request.session['token'] = user.userToken
+        return HttpResponseRedirect('/mine/')
     else:
         f = LoginForm()
         return render(request, 'axf/login.html', {'title':'登录', 'form':f})
 
 def register(request):
-    if request.method == 'POST':
-        userAccount = request.POST.get('userAccount')
-        userPasswd = request.POST.get('userPasswd')
-        userName = request.POST.get('userName')
-        userPhone = request.POST.get('userPhone')
-        userAdderss = request.POST.get('userAdderss')
-        userRank = 0
-        token = time.time() + random.randrange(1, 100000)
-        userToken = str(token)
-        f = request.FILES['userImg']
-        userImg = os.path.join(settings.MDEIA_ROOT, userAccount + '.png')
-        with open(userImg, 'wb') as fp:
-            for data in f.chunks():
-                fp.write(data)
-        user = User.createuser(userAccount, userPasswd, userName, userPhone, userAdderss, userImg, userRank, userToken)
-        user.save()
-        request.session['username'] = userName
-        request.session['token'] = userToken
-        return HttpResponseRedirect('/mine/')
-    else:
+    if request.method != 'POST':
         return render(request, 'axf/register.html', {'title':'注册'})
+    userAccount = request.POST.get('userAccount')
+    userPasswd = request.POST.get('userPasswd')
+    userName = request.POST.get('userName')
+    userPhone = request.POST.get('userPhone')
+    userAdderss = request.POST.get('userAdderss')
+    userRank = 0
+    token = time.time() + random.randrange(1, 100000)
+    userToken = str(token)
+    f = request.FILES['userImg']
+    userImg = os.path.join(settings.MDEIA_ROOT, f'{userAccount}.png')
+    with open(userImg, 'wb') as fp:
+        for data in f.chunks():
+            fp.write(data)
+    user = User.createuser(userAccount, userPasswd, userName, userPhone, userAdderss, userImg, userRank, userToken)
+    user.save()
+    request.session['username'] = userName
+    request.session['token'] = userToken
+    return HttpResponseRedirect('/mine/')
 
 def quit(request):
     logout(request)
